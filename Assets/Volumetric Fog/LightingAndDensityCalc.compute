@@ -1,0 +1,152 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#include "Noise.cginc"
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+
+struct CameraParam {
+	float3 pos;
+	float4x4 mat;
+	float aspect;
+	float fov;
+	float near;
+	float far;
+};
+
+struct LightParam {
+	float3 pos;
+	float3 dir;
+	float4x4 mat;
+	float angle;
+	float intensity;
+	float3 color;
+	int type;
+};
+
+SamplerState samplersunShadow {
+	Filter = MIN_MAG_MIP_POINT;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+SamplerState samplercookie {
+	Filter = MIN_MAG_MIP_LINEAR;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+RWTexture3D<float4> Result;
+Texture2D<float> sunShadow;
+Texture2D<float> cookie;
+uint lightLength;
+StructuredBuffer<CameraParam> camera;
+StructuredBuffer<LightParam> light;
+float time;
+
+float phase(float3 v, float3 l, float g) {
+	float g2 = g * g;
+	return (1.0 / (4.0 * 3.14159)) * ((1.0 - g2) / pow(abs(1.0 + g2 - 2.0 * g * max(0.0, dot(v, l))), 1.5));
+}
+
+float expZ(float z) {
+	return saturate(exp(-1 * 0.9) * exp(z * 0.5) * 4.13 - 1.68);
+}
+
+float3 calcWorldPositionFromCoords(uint3 id) {
+	float2 size = float2(160.0, 90.0);
+	float4 rayDir = normalize(float4(
+		(id.x / size.x) * camera[0].aspect * 2.0 - camera[0].aspect,
+		(id.y / size.y) * 2.0 - 1.0,
+		-(1.0 / tan(radians(camera[0].fov) / 2.0)),
+		0.0
+	)); // camera forward (0, 0, -1)
+	
+	float3 worldRayDir = mul(camera[0].mat, rayDir).xyz;
+	
+	float y = id.z / 127.0;
+	//y = expZ(y);
+	float z = (camera[0].near / abs(rayDir.z)) + y * (camera[0].far / abs(rayDir.z));
+	//float z = camera[0].near + y * camera[0].far;
+	
+	return camera[0].pos + normalize(worldRayDir) * z;
+}
+
+float3 spotLight(uint i, float3 worldPos) {
+	float intensity = light[i].intensity * 100.0;
+	float distance = max(0.0, length(light[i].pos - worldPos));
+	float attenuation = 1.0 / (1.0 + 0.01 * distance + 0.1 * distance * distance);
+	float angle = light[i].angle / 2.0;
+	
+	float inner = angle - 10.0;
+	float outer = angle + 5.0;
+	
+	intensity *= saturate((dot(light[i].dir, normalize(worldPos - light[i].pos)) - cos(radians(outer))) / (cos(radians(inner)) - cos(radians(outer))));
+	
+	/*float4 lightSpacePos = mul(light[i].mat, float4(worldPos, 1.0));
+	lightSpacePos /= lightSpacePos.w;
+	lightSpacePos = lightSpacePos * 0.5 + 0.5;
+	
+	float shadowMap = shadow.SampleLevel(samplershadow, lightSpacePos.xy, 0.0);
+	intensity *= saturate(exp(shadowMap * 80.0) * exp(lightSpacePos.z * -80.0));
+	if (lightSpacePos.z > shadowMap) {
+		intensity = 0.0;
+	}*/
+	
+	//intensity *= cookie.SampleLevel(samplercookie, lightSpacePos.xy, 0.0);
+	
+	return light[i].color * intensity * attenuation;
+}
+
+float3 pointLight(uint i, float3 worldPos) {
+	float intensity = light[i].intensity * 100.0;
+	float distance = max(0.0, length(light[i].pos - worldPos));
+	float attenuation = 1.0 / (1.0 + 0.12 * distance + 0.42 * distance * distance);
+	
+	return light[i].color * intensity * attenuation;
+}
+
+float3 directionalLight(uint i, float3 worldPos) {
+	float intensity = light[i].intensity * 12.0;
+	
+	float4 lightSpacePos = mul(light[i].mat, float4(worldPos, 1.0));
+	lightSpacePos /= lightSpacePos.w;
+	lightSpacePos = lightSpacePos * 0.5 + 0.5;
+	
+	if (lightSpacePos.x > 0 && lightSpacePos.y > 0 && lightSpacePos.x < 1 && lightSpacePos.y < 1) {
+		float shadowMap = sunShadow.SampleLevel(samplersunShadow, lightSpacePos.xy, 0.0);
+		intensity *= saturate(exp(shadowMap * 20.0) * exp(lightSpacePos.z * -20.0));
+	} else {
+		intensity *= 0.0;
+	}
+	
+	return light[i].color * intensity;
+}
+
+[numthreads(16, 8, 8)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	float3 worldPos = calcWorldPositionFromCoords(id);
+	
+	float layerThickness = 0.05;//(id.z > 1 ? expZ(id.z / 127.0) - expZ((id.z - 1) / 127.0) : id.z ? expZ(1 / 127.0) : 0.0) * 15.0;
+	float3 noisePos = worldPos;
+	noisePos.x += time * 2.0;
+	float dustDensity = (simplexFractal(noisePos * 0.15, time * 0.2) + 0.8) * 0.05;// * exp(-worldPos.y * 0.03);
+	float scattering = 0.5 * dustDensity * layerThickness;
+	float absorption = 0.35 * dustDensity * layerThickness;
+
+	float3 viewDirection = normalize(camera[0].pos - worldPos);
+	
+	float3 lighting = 0;
+	for (uint i = 0; i < lightLength; i++) {
+		float3 lightDirection = normalize(worldPos - light[i].pos);
+		
+		lighting += (light[i].type == 0 ? spotLight(i, worldPos) :
+					light[i].type == 1 ? directionalLight(i, worldPos) : pointLight(i, worldPos))
+		* phase(viewDirection, lightDirection, 0.35);
+	}
+	//lighting += 0.02 * phase(worldPos, viewDirection, 0.35);
+	lighting += 0.12;
+	Result[id] = float4(lighting * scattering, scattering + absorption);
+}

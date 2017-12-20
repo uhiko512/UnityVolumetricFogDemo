@@ -1,0 +1,34 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel RayMarchingThroughVolume
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture3D<float4> Result;
+Texture3D<float4> Input;
+
+float4 AccumulateScattering(float4 colorAndDensityFront, float4 colorAndDensityBack) {
+	float3 light = colorAndDensityFront.rgb + saturate(exp(-colorAndDensityFront.a)) * colorAndDensityBack.rgb;
+	return float4(light.rgb, colorAndDensityFront.a + colorAndDensityBack.a);
+}
+
+void WriteOutput(uint3 pos, float4 colorAndDensity) {
+	float4 finalValue = float4(colorAndDensity.rgb, exp(-colorAndDensity.a));
+	Result[pos] = finalValue;
+}
+
+[numthreads(32, 18, 1)]
+void RayMarchingThroughVolume(uint3 id : SV_DispatchThreadID)
+{
+	float4 currentSliceValue = Input[uint3(id.xy, 0)];
+	
+	WriteOutput(uint3(id.xy, 0), currentSliceValue);
+	
+	for (uint z = 1; z < 128; z++) {
+		uint3 volumePos = uint3(id.xy, z);
+
+		float4 nextValue = Input[volumePos];
+
+		currentSliceValue = AccumulateScattering(currentSliceValue, nextValue);
+		WriteOutput(volumePos, currentSliceValue);
+	}
+}

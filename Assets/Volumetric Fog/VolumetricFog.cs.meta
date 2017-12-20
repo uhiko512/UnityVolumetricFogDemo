@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: df8ef50d8afe4624fab15c9ccae6a01f
+timeCreated: 1474946082
+licenseType: Free
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - shader: {fileID: 4800000, guid: 2eda961929f20c3488f5789514e958dc, type: 3}
+  - rayMarching: {fileID: 7200000, guid: e69b5a0ddd85be24bb2c095eff606f75, type: 3}
+  - lightingAndDensityCalc: {fileID: 7200000, guid: cbcd4dc26f23b5f468664bd861e6ee84,
+      type: 3}
+  - sunLight: {instanceID: 0}
+  - flashLight: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

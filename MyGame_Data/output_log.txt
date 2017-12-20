@@ -1,0 +1,24 @@
+Initialize engine version: 5.4.0f3 (a6d8d714de6f)
+GfxDevice: creating device client; threaded=1
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.0]
+    Renderer: NVIDIA GeForce GT 640 (ID=0x1282)
+    Vendor:   NVIDIA
+    VRAM:     995 MB
+Begin MonoManager ReloadAssembly
+Platform assembly: C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\UnityEngine.dll (this message is harmless)
+Loading C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\UnityEngine.dll into Unity Child Domain
+Platform assembly: C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\Assembly-CSharp-firstpass.dll (this message is harmless)
+Loading C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\Assembly-CSharp-firstpass.dll into Unity Child Domain
+Platform assembly: C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\Assembly-CSharp.dll (this message is harmless)
+Loading C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\Assembly-CSharp.dll into Unity Child Domain
+Platform assembly: C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\UnityEngine.UI.dll (this message is harmless)
+Loading C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\UnityEngine.UI.dll into Unity Child Domain
+Platform assembly: C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\UnityEngine.Networking.dll (this message is harmless)
+Loading C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\UnityEngine.Networking.dll into Unity Child Domain
+- Completed reload, in  0.150 seconds
+Platform assembly: C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\System.Core.dll (this message is harmless)
+Platform assembly: C:\Users\uhiko512\Desktop\UnityVolumetricFogDemo\MyGame_Data\Managed\System.dll (this message is harmless)
+desktop: 1680x1050 59Hz; virtual: 1680x1050 at 0,0
+<RI> Initializing input.
+<RI> Input initialized.
